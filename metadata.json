@@ -1,0 +1,6 @@
+{
+  "name": "Bac II Student Portal",
+  "description": "Private, secure examination result portal for Cambodian Bac II (បាក់ឌុប) students.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
