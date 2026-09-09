@@ -4,8 +4,9 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
-  // Support both GitHub Pages repo subpath (/Bacii-Results-/), custom domain, and relative base
-  const base = process.env.VITE_BASE || (process.env.GITHUB_ACTIONS === 'true' ? '/Bacii-Results-/' : './');
+  // Use '/' for Cloud Run / production root, and '/Bacii-Results-/' for GitHub Pages
+  const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
+  const base = process.env.VITE_BASE || (isGitHubActions ? '/Bacii-Results-/' : '/');
 
   return {
     base,
