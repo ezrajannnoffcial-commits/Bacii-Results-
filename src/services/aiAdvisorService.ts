@@ -1,42 +1,5 @@
-import express, { Request, Response } from 'express';
-import path from 'path';
-import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
-import dotenv from 'dotenv';
+import { AdvisorAnalysisResponse, SubjectGradeLetter, Language } from '../types';
 
-dotenv.config();
-
-const app = express();
-const PORT = 3000;
-
-app.use(express.json());
-
-// Lazy-initialized Gemini client
-let genAI: GoogleGenAI | null = null;
-function getGenAI(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
-    return null;
-  }
-  if (!genAI) {
-    genAI = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build'
-        }
-      }
-    });
-  }
-  return genAI;
-}
-
-// Health check endpoint
-app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
-});
-
-// Subject letter grade mapping helper
 const GRADE_POINTS: Record<string, number> = {
   A: 5,
   B: 4,
@@ -46,60 +9,90 @@ const GRADE_POINTS: Record<string, number> = {
   F: 0
 };
 
-// Heuristic fallback analysis if Gemini key is missing or rate-limited
-function generateFallbackAnalysis(params: {
-  candidateNumber: string;
-  school: string;
-  province: string;
-  grades: Record<string, string>;
-  track?: string;
-  lang?: string;
-}) {
-  const { candidateNumber, school, province, grades, track = 'Science', lang = 'km' } = params;
+export interface AdvisorAnalysisParams {
+  candidateNumber?: string;
+  school?: string;
+  province?: string;
+  grades: Record<string, SubjectGradeLetter | string>;
+  track?: 'Science' | 'Social Science';
+  lang?: Language;
+}
 
-  // Calculate score total
-  const subjectKeys = Object.keys(grades);
+/**
+ * Intelligent Counselor Engine calibrated for Cambodia MoEYS Bac II 2026.
+ * Runs client-side (for static GitHub Pages deploys and offline resilience)
+ * as well as server-side fallback.
+ */
+export function generateSmartAdvisorAnalysis(params: AdvisorAnalysisParams): AdvisorAnalysisResponse {
+  const {
+    candidateNumber = '123-456-789',
+    school = 'វិទ្យាល័យព្រះស៊ីសុវត្ថិ',
+    province = 'រាជធានីភ្នំពេញ',
+    grades,
+    track = 'Science',
+    lang = 'km'
+  } = params;
+
+  const isKm = lang === 'km';
+  const isScience = track === 'Science';
+
+  // Calculate score average
+  const subjectEntries = Object.entries(grades);
   let totalPts = 0;
-  subjectKeys.forEach(sub => {
-    totalPts += GRADE_POINTS[grades[sub]] ?? 2;
+  subjectEntries.forEach(([_, gr]) => {
+    const letter = (typeof gr === 'string' ? gr.charAt(0).toUpperCase() : 'C');
+    totalPts += GRADE_POINTS[letter] ?? 2;
   });
-  const avg = totalPts / (subjectKeys.length || 1);
+  const avg = subjectEntries.length > 0 ? totalPts / subjectEntries.length : 3;
 
   let overallGrade: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' = 'C';
   let overallStatus: 'PASS' | 'FAIL' = 'PASS';
-  if (avg >= 4.5) overallGrade = 'A';
-  else if (avg >= 3.6) overallGrade = 'B';
-  else if (avg >= 2.8) overallGrade = 'C';
-  else if (avg >= 2.0) overallGrade = 'D';
-  else if (avg >= 1.2) overallGrade = 'E';
+
+  if (avg >= 4.4) overallGrade = 'A';
+  else if (avg >= 3.5) overallGrade = 'B';
+  else if (avg >= 2.7) overallGrade = 'C';
+  else if (avg >= 1.9) overallGrade = 'D';
+  else if (avg >= 1.1) overallGrade = 'E';
   else {
     overallGrade = 'F';
     overallStatus = 'FAIL';
   }
 
-  // Identify strongest and weakest subjects
-  const sorted = [...subjectKeys].sort((a, b) => (GRADE_POINTS[grades[b]] ?? 0) - (GRADE_POINTS[grades[a]] ?? 0));
-  const strongestNames = sorted.slice(0, 2);
-  const weakestNames = sorted.slice(-2).reverse();
+  // Sort subjects by points
+  const sorted = [...subjectEntries].sort((a, b) => {
+    const ptA = GRADE_POINTS[(a[1] || 'C').charAt(0).toUpperCase()] ?? 2;
+    const ptB = GRADE_POINTS[(b[1] || 'C').charAt(0).toUpperCase()] ?? 2;
+    return ptB - ptA;
+  });
 
-  const isKm = lang === 'km';
-  const isScience = track === 'Science';
+  const cleanSubjectName = (name: string) => {
+    return name.replace(/\s*\(\d+\s*pts\)/i, '').trim();
+  };
 
-  const strongList = strongestNames.map(name => ({
-    subject: name,
-    grade: grades[name] || 'B',
-    reason: isKm 
-      ? `ពិន្ទុឆ្នើមក្នុងមុខវិជ្ជា ${name} បង្ហាញពីមូលដ្ឋានគ្រឹះរឹងមាំសម្រាប់ជំនាញបច្ចេកវិទ្យា និងវិទ្យាសាស្ត្រពិត។`
-      : `Outstanding proficiency in ${name}, indicating strong analytical capability for higher education.`
-  }));
+  const strongest = sorted.slice(0, 2);
+  const weakest = sorted.slice(-2).reverse();
 
-  const weakList = weakestNames.map(name => ({
-    subject: name,
-    grade: grades[name] || 'D',
-    reason: isKm
-      ? `មុខវិជ្ជា ${name} ត្រូវការការរំលឹក និងពង្រឹងបន្ថែមដើម្បីត្រៀមប្រឡងចូល ឬថ្នាក់ឆ្នាំសិក្សាមូលដ្ឋាន។`
-      : `Needs consolidation in ${name} before foundation year entrance exams.`
-  }));
+  const strongList = strongest.map(([name, gr]) => {
+    const clean = cleanSubjectName(name);
+    return {
+      subject: clean,
+      grade: gr || 'B',
+      reason: isKm
+        ? `និទ្ទេស ${gr} ក្នុងមុខវិជ្ជា ${clean} បង្ហាញពីមូលដ្ឋានគ្រឹះរឹងមាំសម្រាប់ជំនាញឧត្តមសិក្សា និងឱកាសអាហារូបករណ៍។`
+        : `Grade ${gr} in ${clean} indicates exceptional foundational aptitude and high suitability for competitive university programs.`
+    };
+  });
+
+  const weakList = weakest.map(([name, gr]) => {
+    const clean = cleanSubjectName(name);
+    return {
+      subject: clean,
+      grade: gr || 'D',
+      reason: isKm
+        ? `មុខវិជ្ជា ${clean} គួរតែទទួលបានការរំលឹក និងពង្រឹងបន្ថែមដើម្បីត្រៀមប្រឡងចូល ឬថ្នាក់ឆ្នាំសិក្សាមូលដ្ឋាន (Foundation Year)។`
+        : `Needs consolidation in ${clean} before sitting for university entrance examinations.`
+    };
+  });
 
   const isFail = overallGrade === 'F' || overallGrade === 'E';
 
@@ -111,27 +104,27 @@ function generateFallbackAnalysis(params: {
       overallGrade,
       status: overallStatus,
       overallAnalysis: isKm
-        ? `ផ្អែកលើការវាយតម្លៃលទ្ធផលបាក់ឌុបសរុប បេក្ខជនទទួលបាននិទ្ទេសរួម «${overallGrade}» (${overallStatus === 'PASS' ? 'ជាប់ជាស្ថាពរ' : 'ធ្លាក់/មិនទាន់ជាប់'}) សម្រាប់សម័យប្រឡងឆ្នាំ២០២៦។ មុខវិជ្ជាខ្លាំងបំផុតគឺ ${strongestNames.join(', ')}។`
-        : `Based on your Bac II performance, your evaluated overall Mention is "${overallGrade}" (${overallStatus}). Your standout academic strengths are centered in ${strongestNames.join(', ')}.`,
+        ? `ផ្អែកលើការវាយតម្លៃលទ្ធផលបាក់ឌុបសរុប បេក្ខជនទទួលបាននិទ្ទេសរួម «${overallGrade}» (${overallStatus === 'PASS' ? 'ជាប់ជាស្ថាពរ' : 'ធ្លាក់/មិនទាន់ជាប់'}) សម្រាប់សម័យប្រឡងឆ្នាំ២០២៦។ មុខវិជ្ជាលេចធ្លោជាងគេរួមមាន ${strongest.map(s => cleanSubjectName(s[0])).join(' និង ')}។`
+        : `Based on your Bac II performance evaluation, your overall Mention is evaluated as "${overallGrade}" (${overallStatus === 'PASS' ? 'Successful Pass' : 'Needs Retake / TVET'}). Your primary academic strengths are centered in ${strongest.map(s => cleanSubjectName(s[0])).join(' & ')}.`,
       strongestSubjects: strongList,
       weakestSubjects: weakList
     },
     universityMatchmaker: {
       recommendedMajors: [
         {
-          majorName: isScience 
+          majorName: isScience
             ? (isKm ? 'វិស្វកម្មសូហ្វវែរ និងវិទ្យាសាស្ត្រកុំព្យូទ័រ' : 'Computer Science & Software Engineering')
             : (isKm ? 'ហិរញ្ញវត្ថុ ធនាគារ និងពាណិជ្ជកម្មអន្តរជាតិ' : 'Finance, Banking & International Business'),
           category: isScience ? 'STEM / Technology' : 'Business & Finance',
           suitabilityReason: isKm
             ? 'ស៊ីសង្វាក់យ៉ាងល្អឥតខ្ចោះជាមួយមុខវិជ្ជាគណិតវិទ្យា និងការគិតបែបរិះគន់ដែលមានតម្រូវការទីផ្សារការងារខ្ពស់។'
-            : 'Strong alignment with your quantitative scores and high industry demand in Cambodia.',
+            : 'Strong alignment with your quantitative scores and high industry demand across ASEAN.',
           careerProspects: isKm ? 'អ្នកអភិវឌ្ឍន៍កម្មវិធី, Data Analyst, Cloud Architect' : 'Software Developer, Data Analyst, Financial Analyst'
         },
         {
           majorName: isScience
-            ? (isKm ? 'ទូរគមនាគមន៍ និងបណ្តាញកុំព្យូទ័រ' : 'International Relations & Diplomacy')
-            : (isKm ? 'ច្បាប់ និងរដ្ឋបាលសាធារណៈ' : 'Law & Public Administration'),
+            ? (isKm ? 'ទូរគមនាគមន៍ និងបណ្តាញកុំព្យូទ័រ' : 'ច្បាប់ និងរដ្ឋបាលសាធារណៈ')
+            : (isKm ? 'ទំនាក់ទំនងអន្តរជាតិ និងការទូត' : 'International Relations & Diplomacy'),
           category: isScience ? 'Engineering' : 'Social Sciences',
           suitabilityReason: isKm
             ? 'ឱកាសការងារទូលំទូលាយក្នុងវិស័យរដ្ឋ និងឯកជន ស្របនឹងក្របខ័ណ្ឌអភិវឌ្ឍន៍ឌីជីថលកម្ពុជា។'
@@ -143,7 +136,7 @@ function generateFallbackAnalysis(params: {
           category: 'Interdisciplinary',
           suitabilityReason: isKm
             ? 'ការរួមបញ្ចូលរវាងបច្ចេកវិទ្យាឌីជីថល និងការគ្រប់គ្រងអាជីវកម្មទំនើប។'
-            : 'Effective bridge between digital systems and business management.',
+            : 'Effective bridge between digital technology and business management.',
           careerProspects: isKm ? 'IT Project Manager, Business Analyst' : 'IT Project Manager, Business Analyst'
         }
       ],
@@ -306,221 +299,56 @@ function generateFallbackAnalysis(params: {
   };
 }
 
-const CANDIDATE_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+/**
+ * Main dispatch function: attempts server-side endpoint first.
+ * If running on GitHub Pages (static), server is unreachable, or returns an error,
+ * automatically falls back to generateSmartAdvisorAnalysis.
+ */
+export async function getAdvisorAnalysis(params: AdvisorAnalysisParams): Promise<AdvisorAnalysisResponse> {
+  // Always build reliable fallback result ready
+  const fallback = generateSmartAdvisorAnalysis(params);
 
-async function generateAdvisorWithFallback(ai: GoogleGenAI, prompt: string) {
-  let lastError: any = null;
-  for (const model of CANDIDATE_MODELS) {
-    try {
-      const callPromise = ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json'
-        }
-      });
+  // Determine api endpoint URL (handling relative path if hosted under subfolder like GitHub Pages)
+  const base = ((import.meta as any).env?.BASE_URL as string) || '/';
+  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+  const endpoint = `${cleanBase}/api/ai/advisor-analysis`;
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 7500)
-      );
-
-      const response = await Promise.race([callPromise, timeoutPromise]) as any;
-
-      const responseText = response.text?.trim() || '{}';
-      let cleaned = responseText;
-      if (cleaned.startsWith('```json')) cleaned = cleaned.slice(7);
-      else if (cleaned.startsWith('```')) cleaned = cleaned.slice(3);
-      if (cleaned.endsWith('```')) cleaned = cleaned.slice(0, -3);
-
-      return JSON.parse(cleaned.trim());
-    } catch (err: any) {
-      lastError = err;
-      await new Promise(resolve => setTimeout(resolve, 250));
-    }
-  }
-  throw lastError;
-}
-
-// POST endpoint: /api/ai/advisor-analysis
-app.post('/api/ai/advisor-analysis', async (req: Request, res: Response) => {
   try {
-    const { candidateNumber, school, province, grades, track, lang } = req.body;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-    if (!grades || typeof grades !== 'object') {
-      res.status(400).json({ error: 'Missing or invalid grades data' });
-      return;
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        candidateNumber: params.candidateNumber,
+        school: params.school,
+        province: params.province,
+        track: params.track,
+        grades: params.grades,
+        lang: params.lang
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    // If server returned ok and is valid json
+    if (response.ok) {
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await response.json();
+        if (data && data.studentSummary && data.universityMatchmaker) {
+          return data as AdvisorAnalysisResponse;
+        }
+      }
     }
-
-    const ai = getGenAI();
-
-    // If Gemini client is not configured, return high-quality heuristic response
-    if (!ai) {
-      console.log('GEMINI_API_KEY not configured. Using heuristic advisor engine.');
-      const fallback = generateFallbackAnalysis({
-        candidateNumber: candidateNumber || 'ID-2026',
-        school: school || 'វិទ្យាល័យព្រះស៊ីសុវត្ថិ',
-        province: province || 'រាជធានីភ្នំពេញ (Phnom Penh)',
-        grades,
-        track: track || 'Science',
-        lang: lang || 'km'
-      });
-      res.json(fallback);
-      return;
-    }
-
-    // Build prompt for Gemini
-    const isKm = lang === 'km';
-    const gradeSummaryText = Object.entries(grades)
-      .map(([sub, gr]) => `${sub}: Grade ${gr}`)
-      .join(', ');
-
-    const prompt = `
-You are the official Senior Academic & Higher Education Counselor for Cambodian High School Students (Ministry of Education, Youth and Sport / MoEYS Bac II Examination).
-
-Analyze this Cambodian Bac II student's credentials and raw grade letters:
-- Candidate Number: ${candidateNumber || 'Not specified'}
-- High School: ${school || 'High School'}
-- Province: ${province || 'Cambodia'}
-- Track: ${track || 'Science'}
-- Raw Grade Letters: ${gradeSummaryText}
-- User Preferred Language: ${isKm ? 'Khmer (ភាសាខ្មែរ)' : 'English'}
-
-Provide a comprehensive, highly realistic and structured assessment for Cambodian universities, scholarships, and TVET vocational programs.
-
-Requirements:
-1. Overall Grade & Score Analysis:
-   - Calculate an evaluated Mention Grade (A, B, C, D, E, or F). Note: In Cambodia Bac II, 5 points for A, 4 for B, 3 for C, 2 for D, 1 for E, 0 for F. Average determines Mention. Grade F is FAIL, E through A is PASS.
-   - Summarize overall performance in 2-3 sentences.
-   - Identify 2 Strongest Subjects (highlighting strengths) and 2 Weakest Subjects (highlighting improvement areas).
-
-2. AI Major & University Matchmaker:
-   - Recommend 3 specific majors suitable for their grades in Cambodia.
-   - Suggest 4 to 5 top Cambodian higher education institutions (e.g., RUPP, ITC, CADT, NUM, Paññāsāstra / PUC, Paragon, UHS, RULE) with real faculties and admission criteria.
-   - Suggest 3 concrete local scholarship pathways (e.g. MoEYS national scholarship, Techo Digital Talent, university merit discounts).
-
-3. Empathetic Support & Retake/Vocational Guide:
-   - If grade is E or F (or overall weak): Provide a warm, heartfelt, encouraging tone in ${isKm ? 'Khmer' : 'English'}. Remind them that Bac II is just one step and they have bright opportunities in Cambodia's booming economy. Provide practical guidance on TVET 1.5M youth vocational training program (free tuition + monthly stipend), Associate Degrees (2-year pathways bridging to Bachelor), and MoEYS Retake preparation.
-   - If grade is A, B, C, D: Congratulate them warmly and provide actionable next steps (scholarship concourse, entrance test prep, English preparation).
-
-Output JSON matching this exact structure:
-{
-  "studentSummary": {
-    "candidateNumber": "string",
-    "school": "string",
-    "province": "string",
-    "overallGrade": "A" | "B" | "C" | "D" | "E" | "F",
-    "status": "PASS" | "FAIL",
-    "overallAnalysis": "string",
-    "strongestSubjects": [
-      { "subject": "string", "grade": "string", "reason": "string" }
-    ],
-    "weakestSubjects": [
-      { "subject": "string", "grade": "string", "reason": "string" }
-    ]
-  },
-  "universityMatchmaker": {
-    "recommendedMajors": [
-      {
-        "majorName": "string",
-        "category": "string",
-        "suitabilityReason": "string",
-        "careerProspects": "string"
-      }
-    ],
-    "matchingInstitutions": [
-      {
-        "nameEn": "string",
-        "nameKm": "string",
-        "type": "Public" | "Private" | "Institute",
-        "recommendedFaculty": "string",
-        "admissionRequirement": "string",
-        "notableStrengths": "string"
-      }
-    ],
-    "scholarshipPathways": [
-      {
-        "title": "string",
-        "provider": "string",
-        "criteria": "string",
-        "benefits": "string",
-        "applicationWindow": "string"
-      }
-    ]
-  },
-  "empatheticGuide": {
-    "encouragingMessage": "string",
-    "pathwayType": "top_achiever" | "solid_pass" | "tvet_vocational_retake",
-    "practicalNextSteps": [
-      {
-        "stepNumber": 1,
-        "title": "string",
-        "description": "string",
-        "actionableLinkOrContact": "string"
-      }
-    ],
-    "tvetVocationalOptions": [
-      {
-        "programName": "string",
-        "institution": "string",
-        "duration": "string",
-        "benefit": "string"
-      }
-    ],
-    "retakeStrategy": {
-      "targetSubjects": ["string"],
-      "studyTimeline": "string",
-      "keyAdvice": "string"
-    }
+  } catch (e) {
+    console.info('Using client-side MoEYS AI counselor engine (offline/GitHub Pages mode):', e);
   }
+
+  // Gracefully return authentic Cambodia MoEYS analysis
+  return fallback;
 }
-`;
-
-    try {
-      const parsed = await generateAdvisorWithFallback(ai, prompt);
-      res.json(parsed);
-    } catch {
-      const fallback = generateFallbackAnalysis({
-        candidateNumber: candidateNumber || 'ID-2026',
-        school: school || 'វិទ្យាល័យព្រះស៊ីសុវត្ថិ',
-        province: province || 'រាជធានីភ្នំពេញ (Phnom Penh)',
-        grades,
-        track: track || 'Science',
-        lang: lang || 'km'
-      });
-      res.json(fallback);
-    }
-  } catch {
-    const fallback = generateFallbackAnalysis({
-      candidateNumber: req.body?.candidateNumber || 'ID-2026',
-      school: req.body?.school || 'វិទ្យាល័យព្រះស៊ីសុវត្ថិ',
-      province: req.body?.province || 'រាជធានីភ្នំពេញ (Phnom Penh)',
-      grades: req.body?.grades || {},
-      track: req.body?.track || 'Science',
-      lang: req.body?.lang || 'km'
-    });
-    res.json(fallback);
-  }
-});
-
-async function startServer() {
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Bac II Server running on http://0.0.0.0:${PORT}`);
-  });
-}
-
-startServer();

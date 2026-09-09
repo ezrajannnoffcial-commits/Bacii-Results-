@@ -7,6 +7,7 @@ import {
   MAX_BACII_TOTAL_SCORE,
   normalizeExamResult 
 } from './scoreCalculator';
+import { syncStudentToCloud, syncResultToCloud, syncNotificationsToCloud } from '../services/firebaseSync';
 
 const STORAGE_KEYS = {
   REGISTERED_STUDENTS: 'bacii_registered_students_v1',
@@ -127,6 +128,9 @@ export function saveRegisteredStudent(student: StudentProfile, password?: string
     }
     localStorage.setItem(STORAGE_KEYS.REGISTERED_STUDENTS, JSON.stringify(students));
 
+    // Cloud firestore sync
+    syncStudentToCloud(student);
+
     if (password) {
       const rawPw = localStorage.getItem(STORAGE_KEYS.USER_PASSWORDS);
       const pwMap: Record<string, string> = rawPw ? JSON.parse(rawPw) : {};
@@ -225,6 +229,9 @@ export function saveStoredExamResult(result: ExamResult): void {
     const map: Record<string, ExamResult> = raw ? JSON.parse(raw) : {};
     map[normalized.candidateNumber] = normalized;
     localStorage.setItem(STORAGE_KEYS.STUDENT_RESULTS, JSON.stringify(map));
+
+    // Cloud firestore sync
+    syncResultToCloud(normalized);
   } catch (e) {
     console.error('Failed to save exam result:', e);
   }
@@ -247,6 +254,9 @@ export function saveStoredNotifications(candidateNumber: string, notifs: AppNoti
     const map: Record<string, AppNotification[]> = raw ? JSON.parse(raw) : {};
     map[candidateNumber] = notifs;
     localStorage.setItem(STORAGE_KEYS.STUDENT_NOTIFS, JSON.stringify(map));
+
+    // Cloud firestore sync
+    syncNotificationsToCloud(candidateNumber, notifs);
   } catch (e) {
     console.error('Failed to save notifications:', e);
   }

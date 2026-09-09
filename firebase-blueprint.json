@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student Profile",
+      "description": "Bac II candidate registration and profile information",
+      "type": "object",
+      "properties": {
+        "candidateNumber": { "type": "string", "description": "MoEYS Candidate ID" },
+        "fullNameLatin": { "type": "string", "description": "Full name in English/Latin" },
+        "fullNameKm": { "type": "string", "description": "Full name in Khmer script" },
+        "gender": { "type": "string", "enum": ["M", "F"] },
+        "dob": { "type": "string", "description": "Date of birth YYYY-MM-DD" },
+        "school": { "type": "string", "description": "High school name" },
+        "province": { "type": "string", "description": "Province or municipality" },
+        "track": { "type": "string", "enum": ["Science", "Social Science"] },
+        "examCenter": { "type": "string", "description": "Assigned examination center" },
+        "examYear": { "type": "number", "description": "Examination year e.g. 2026" },
+        "phoneNumber": { "type": "string", "description": "Contact phone number" },
+        "avatarUrl": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["candidateNumber", "fullNameLatin", "fullNameKm", "track", "province"]
+    },
+    "ExamResult": {
+      "title": "Exam Result",
+      "description": "Student Bac II examination score record and grades",
+      "type": "object",
+      "properties": {
+        "candidateNumber": { "type": "string" },
+        "year": { "type": "number" },
+        "studentNameLatin": { "type": "string" },
+        "studentNameKm": { "type": "string" },
+        "school": { "type": "string" },
+        "province": { "type": "string" },
+        "examCenter": { "type": "string" },
+        "roomNumber": { "type": "string" },
+        "deskNumber": { "type": "string" },
+        "isReleased": { "type": "boolean" },
+        "releaseDate": { "type": "string" },
+        "overallStatus": { "type": "string", "enum": ["PASS", "FAIL"] },
+        "grade": { "type": "string" },
+        "totalScore": { "type": "number" },
+        "maxTotalScore": { "type": "number" },
+        "percentile": { "type": "number" },
+        "track": { "type": "string" },
+        "verificationHash": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["candidateNumber", "year", "totalScore", "grade"]
+    }
+  },
+  "firestore": {
+    "/students/{candidateNumber}": {
+      "entity": "Student",
+      "description": "Registered students indexed by candidate ID"
+    },
+    "/examResults/{candidateNumber}": {
+      "entity": "ExamResult",
+      "description": "Exam results indexed by candidate ID"
+    }
+  }
+}

@@ -4,8 +4,11 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  // Support both GitHub Pages repo subpath (/Bacii-Results-/), custom domain, and relative base
+  const base = process.env.VITE_BASE || (process.env.GITHUB_ACTIONS === 'true' ? '/Bacii-Results-/' : './');
+
   return {
-    base: '/Bacii-Results-/',
+    base,
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

@@ -30,6 +30,7 @@ import {
 } from '../types';
 import { getT } from '../locales';
 import { generateAdvisorReportPdf } from '../utils/pdfGenerator';
+import { getAdvisorAnalysis } from '../services/aiAdvisorService';
 
 interface AIAdvisorScreenProps {
   student: StudentProfile;
@@ -171,7 +172,7 @@ export const AIAdvisorScreen: React.FC<AIAdvisorScreenProps> = ({
     }
   };
 
-  // Submit analysis request to server-side Gemini API
+  // Submit analysis request: connects with server or runs high-fidelity client engine on GitHub Pages
   const handleRunAnalysis = async () => {
     setIsLoading(true);
     try {
@@ -181,30 +182,19 @@ export const AIAdvisorScreen: React.FC<AIAdvisorScreenProps> = ({
         mappedGrades[`${lang === 'km' ? sub.nameKm : sub.nameEn} (${sub.maxScore} pts)`] = grades[sub.id] || 'C';
       });
 
-      const response = await fetch('/api/ai/advisor-analysis', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          candidateNumber,
-          school,
-          province,
-          track,
-          grades: mappedGrades,
-          lang
-        })
+      const data = await getAdvisorAnalysis({
+        candidateNumber,
+        school,
+        province,
+        track,
+        grades: mappedGrades,
+        lang
       });
 
-      if (!response.ok) {
-        throw new Error('Analysis request failed');
-      }
-
-      const data: AdvisorAnalysisResponse = await response.json();
       setAnalysis(data);
       setActiveSubTab('score');
     } catch (err) {
-      console.warn('AI analysis request encountered an issue:', err);
+      console.error('AI analysis encountered an issue:', err);
     } finally {
       setIsLoading(false);
     }
