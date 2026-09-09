@@ -96,10 +96,10 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
 
   const isPass = result.overallStatus === 'PASS';
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     setIsDownloading(true);
     try {
-      generateResultPdf(result);
+      await generateResultPdf(result);
       setDownloadSuccess(true);
       setTimeout(() => setDownloadSuccess(false), 3000);
     } catch (err) {

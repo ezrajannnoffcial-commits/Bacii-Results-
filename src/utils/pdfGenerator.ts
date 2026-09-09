@@ -1,8 +1,8 @@
-import { jsPDF } from 'jspdf';
 import { ExamResult, AdvisorAnalysisResponse, Language } from '../types';
 import { normalizeExamResult } from './scoreCalculator';
 
-export function generateAdvisorReportPdf(analysis: AdvisorAnalysisResponse, lang: Language): void {
+export async function generateAdvisorReportPdf(analysis: AdvisorAnalysisResponse, lang: Language): Promise<void> {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -184,8 +184,9 @@ export function generateAdvisorReportPdf(analysis: AdvisorAnalysisResponse, lang
 }
 
 
-export function generateResultPdf(rawResult: ExamResult): void {
+export async function generateResultPdf(rawResult: ExamResult): Promise<void> {
   const result = normalizeExamResult(rawResult);
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Language, 
@@ -28,15 +28,26 @@ import { MobileFrame } from './components/MobileFrame';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { RegisterScreen } from './components/RegisterScreen';
 import { SignInScreen } from './components/SignInScreen';
-import { HomeScreen } from './components/HomeScreen';
-import { ResultScreen } from './components/ResultScreen';
-import { HistoryScreen } from './components/HistoryScreen';
-import { NotificationsScreen } from './components/NotificationsScreen';
-import { ProfileScreen } from './components/ProfileScreen';
-import { AIAdvisorScreen } from './components/AIAdvisorScreen';
 import { BottomNav } from './components/BottomNav';
 import { PushNotificationToast } from './components/PushNotificationToast';
 import { PrivacyModal } from './components/PrivacyModal';
+
+// Lazy load post-auth screens to optimize initial bundle size & load speed
+const HomeScreen = lazy(() => import('./components/HomeScreen').then(m => ({ default: m.HomeScreen })));
+const ResultScreen = lazy(() => import('./components/ResultScreen').then(m => ({ default: m.ResultScreen })));
+const HistoryScreen = lazy(() => import('./components/HistoryScreen').then(m => ({ default: m.HistoryScreen })));
+const NotificationsScreen = lazy(() => import('./components/NotificationsScreen').then(m => ({ default: m.NotificationsScreen })));
+const ProfileScreen = lazy(() => import('./components/ProfileScreen').then(m => ({ default: m.ProfileScreen })));
+const AIAdvisorScreen = lazy(() => import('./components/AIAdvisorScreen').then(m => ({ default: m.AIAdvisorScreen })));
+
+function ScreenLoadingFallback() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50">
+      <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-3"></div>
+      <p className="text-xs font-semibold text-slate-500">កំពុងដំណើរការ...</p>
+    </div>
+  );
+}
 
 export default function App() {
   // Initialize storage once on boot
@@ -281,13 +292,13 @@ export default function App() {
 
       {/* Screen Router with Smooth Mobile Transitions */}
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={isLoggedIn ? currentScreen : `auth-${currentScreen}`}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.1, ease: 'easeOut' }}
             className="flex-1 flex flex-col min-h-0 overflow-hidden"
           >
             {!isLoggedIn ? (
@@ -316,7 +327,7 @@ export default function App() {
                 )}
               </>
             ) : (
-              <>
+              <Suspense fallback={<ScreenLoadingFallback />}>
                 {currentScreen === 'home' && (
                   <HomeScreen
                     student={student}
@@ -371,7 +382,7 @@ export default function App() {
                     lang={lang}
                   />
                 )}
-              </>
+              </Suspense>
             )}
           </motion.div>
         </AnimatePresence>
