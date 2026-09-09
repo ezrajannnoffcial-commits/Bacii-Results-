@@ -51,12 +51,16 @@
   },
   "firestore": {
     "/students/{candidateNumber}": {
-      "entity": "Student",
+      "schema": "Student",
       "description": "Registered students indexed by candidate ID"
     },
     "/examResults/{candidateNumber}": {
-      "entity": "ExamResult",
+      "schema": "ExamResult",
       "description": "Exam results indexed by candidate ID"
+    },
+    "/notifications/{candidateNumber}": {
+      "schema": "NotificationDoc",
+      "description": "Student notification records indexed by candidate ID"
     }
   }
 }

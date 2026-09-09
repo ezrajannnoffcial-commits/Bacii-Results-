@@ -504,34 +504,18 @@ Output JSON matching this exact structure:
 });
 
 async function startServer() {
-  // Reliable production detection for Cloud Run, container deploy, and compiled server.cjs
-  const isProduction =
-    process.env.NODE_ENV === 'production' ||
-    Boolean(process.env.K_SERVICE) ||
-    (typeof __filename !== 'undefined' && __filename.endsWith('.cjs'));
-
-  if (!isProduction) {
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
-    // Determine static assets dist path
-    const distPath = fs.existsSync(path.join(process.cwd(), 'dist', 'index.html'))
-      ? path.join(process.cwd(), 'dist')
-      : fs.existsSync(path.join(__dirname, 'index.html'))
-        ? __dirname
-        : path.join(process.cwd(), 'dist');
-
+    const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req: Request, res: Response) => {
-      const indexPath = path.join(distPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-      } else {
-        res.status(404).send('Bac II Portal Not Found');
-      }
+      res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 

@@ -1,24 +1,95 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write for student profiles
-    match /students/{candidateNumber} {
-      allow read, write: if true;
-    }
 
-    // Allow read/write for exam results
-    match /examResults/{candidateNumber} {
-      allow read, write: if true;
-    }
-
-    // Allow read/write for student notifications
-    match /notifications/{candidateNumber} {
-      allow read, write: if true;
-    }
-
-    // Default deny all other paths
+    // Default-deny catch-all safety net
     match /{document=**} {
       allow read, write: if false;
+    }
+
+    // Helper: Validates document path ID against injection/denial-of-wallet
+    function isValidId(id) {
+      return id is string && id.size() >= 3 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Helper: Shortcut to incoming request document data
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Helper: Verified Admin check
+    function isAdmin() {
+      return request.auth != null &&
+        request.auth.token.email == 'danielrealone5@gmail.com' &&
+        request.auth.token.email_verified == true;
+    }
+
+    // Helper: Schema validation for student profile
+    function isValidStudent(data) {
+      return data.candidateNumber is string &&
+        data.candidateNumber.size() >= 3 && data.candidateNumber.size() <= 64 &&
+        data.fullNameLatin is string && data.fullNameLatin.size() <= 128 &&
+        data.fullNameKm is string && data.fullNameKm.size() <= 128 &&
+        data.province is string && data.province.size() <= 128 &&
+        data.track is string && data.track.size() <= 64;
+    }
+
+    // Helper: Schema validation for exam results
+    function isValidExamResult(data) {
+      return data.candidateNumber is string &&
+        data.candidateNumber.size() >= 3 && data.candidateNumber.size() <= 64 &&
+        data.year is number &&
+        data.verificationHash is string && data.verificationHash.size() <= 128;
+    }
+
+    // Helper: Schema validation for student notifications
+    function isValidNotificationDoc(data) {
+      return data.candidateNumber is string &&
+        data.candidateNumber.size() >= 3 && data.candidateNumber.size() <= 64 &&
+        data.notifications is list &&
+        data.notifications.size() <= 100;
+    }
+
+    // Student Profiles Collection
+    match /students/{candidateNumber} {
+      // Disallow collection scraping and enumeration
+      allow list: if false;
+      // Allow fetching specific student profile only by valid candidate number
+      allow get: if isValidId(candidateNumber);
+      // Validate schema on writes; immutable candidateNumber mapping
+      allow create, update: if isValidId(candidateNumber) &&
+        incoming().candidateNumber == candidateNumber &&
+        isValidStudent(incoming());
+      // Prevent unauthorized deletion
+      allow delete: if isAdmin();
+    }
+
+    // Exam Results Collection
+    match /examResults/{candidateNumber} {
+      // Disallow mass-dumping or bulk scraping of all student grades
+      allow list: if false;
+      // Allow verified lookup of individual result by valid candidate number
+      allow get: if isValidId(candidateNumber);
+      // Validate result schema; candidateNumber must match document ID
+      allow create, update: if isValidId(candidateNumber) &&
+        incoming().candidateNumber == candidateNumber &&
+        isValidExamResult(incoming());
+      // Prevent deletion
+      allow delete: if isAdmin();
+    }
+
+    // Student Notifications Inbox
+    match /notifications/{candidateNumber} {
+      // Prevent enumeration of student notification feeds
+      allow list: if false;
+      // Allow retrieval by valid candidate number
+      allow get: if isValidId(candidateNumber);
+      // Validate notifications payload
+      allow create, update: if isValidId(candidateNumber) &&
+        incoming().candidateNumber == candidateNumber &&
+        isValidNotificationDoc(incoming());
+      // Prevent deletion
+      allow delete: if isAdmin();
     }
   }
 }
