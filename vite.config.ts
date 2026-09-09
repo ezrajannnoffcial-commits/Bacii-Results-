@@ -4,9 +4,8 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
-  // Use '/' for Cloud Run / production root, and '/Bacii-Results-/' for GitHub Pages
-  const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
-  const base = process.env.VITE_BASE || (isGitHubActions ? '/Bacii-Results-/' : '/');
+  // Use relative './' base so assets resolve seamlessly on both Cloud Run root and GitHub Pages subpaths
+  const base = process.env.VITE_BASE || './';
 
   return {
     base,

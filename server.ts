@@ -504,18 +504,41 @@ Output JSON matching this exact structure:
 });
 
 async function startServer() {
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
+  const isProduction = process.env.NODE_ENV === 'production' || 
+    (typeof __filename !== 'undefined' && __filename.endsWith('.cjs'));
+
+  if (!isProduction) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    const candidatePaths = [
+      path.join(process.cwd(), 'dist'),
+      typeof __dirname !== 'undefined' ? __dirname : '',
+      process.cwd()
+    ].filter(Boolean);
+
+    const distPath = candidatePaths.find(p => fs.existsSync(path.join(p, 'index.html'))) || path.join(process.cwd(), 'dist');
+
+    // Serve static assets
+    app.use(express.static(distPath, {
+      maxAge: '1h',
+      index: false
+    }));
+
+    // Fallback for SPA routing - never cache index.html to prevent white blank screen on updates
     app.get('*', (req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('Bac II Application build not found. Please trigger build.');
+      }
     });
   }
 
