@@ -4,8 +4,8 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
-  // Use relative './' base so assets resolve seamlessly on both Cloud Run root and GitHub Pages subpaths
-  const base = process.env.VITE_BASE || './';
+  // Standard root base for Cloud Run and web preview environments
+  const base = process.env.VITE_BASE || '/';
 
   return {
     base,

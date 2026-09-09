@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
@@ -522,11 +522,18 @@ async function startServer() {
 
     const distPath = candidatePaths.find(p => fs.existsSync(path.join(p, 'index.html'))) || path.join(process.cwd(), 'dist');
 
-    // Serve static assets
+    // Serve static assets with standard caching
     app.use(express.static(distPath, {
-      maxAge: '1h',
-      index: false
+      maxAge: '1h'
     }));
+
+    // Prevent missing static assets from falling through to index.html (which causes JS SyntaxError / blank screen)
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      if (req.path.startsWith('/assets/') || req.path.match(/\.(js|css|json|png|jpg|jpeg|svg|webp|ico|woff2?|map)$/i)) {
+        return res.status(404).send('Asset not found');
+      }
+      next();
+    });
 
     // Fallback for SPA routing - never cache index.html to prevent white blank screen on updates
     app.get('*', (req: Request, res: Response) => {
