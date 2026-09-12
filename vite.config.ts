@@ -17,7 +17,13 @@ export default defineConfig(() => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 1500,
+      chunkSizeWarningLimit: 3000,
+      modulePreload: false,
+      rollupOptions: {
+        output: {
+          inlineDynamicImports: true,
+        },
+      },
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

@@ -527,9 +527,22 @@ async function startServer() {
       maxAge: '1h'
     }));
 
+    // If assets are requested with any nested prefix (e.g. /subpath/assets/...), serve directly from dist/assets
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      const assetMatch = req.path.match(/\/assets\/(.+)$/);
+      if (assetMatch) {
+        const filePath = path.join(distPath, 'assets', assetMatch[1]);
+        if (fs.existsSync(filePath)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          return res.sendFile(filePath);
+        }
+      }
+      next();
+    });
+
     // Prevent missing static assets from falling through to index.html (which causes JS SyntaxError / blank screen)
     app.use((req: Request, res: Response, next: NextFunction) => {
-      if (req.path.startsWith('/assets/') || req.path.match(/\.(js|css|json|png|jpg|jpeg|svg|webp|ico|woff2?|map)$/i)) {
+      if (req.path.includes('/assets/') || req.path.match(/\.(js|css|json|png|jpg|jpeg|svg|webp|ico|woff2?|map)$/i)) {
         return res.status(404).send('Asset not found');
       }
       next();
