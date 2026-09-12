@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="km">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bac II Student Portal - លទ្ធផលបាក់ឌុប</title>
+    <meta name="description" content="Private, secure examination result portal for Cambodian Bac II (បាក់ឌុប) students." />
+    <meta property="og:title" content="Bac II Student Portal - លទ្ធផលបាក់ឌុប" />
+    <meta property="og:description" content="Private, secure examination result portal for Cambodian Bac II (បាក់ឌុប) students." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet" />
+    <script>
+      // Automatically normalize GitHub Pages subpath trailing slash so relative assets resolve properly
+      (function() {
+        var p = window.location.pathname;
+        if (window.location.hostname.indexOf('github.io') !== -1 && p.length > 1 && !p.endsWith('/') && !p.slice(p.lastIndexOf('/')).includes('.')) {
+          window.location.replace(p + '/' + window.location.search + window.location.hash);
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/index-GGaqqPvJ.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B-j0ia1i.css">
+  </head>
+  <body class="bg-[#F1F5F9] text-[#1E293B] antialiased">
+    <div id="root">
+      <div id="boot-loader" style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #0F172A; font-family: 'Kantumruy Pro', 'Plus Jakarta Sans', system-ui, sans-serif; color: #F8FAFC; padding: 24px; text-align: center;">
+        <div style="width: 56px; height: 56px; border-radius: 18px; background: linear-gradient(135deg, #2563EB, #1D4ED8); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4); border: 1px solid rgba(255,255,255,0.15);">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="7"></circle>
+            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+          </svg>
+        </div>
+        <div style="font-size: 17px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em; margin-bottom: 4px;">Bac II Student Portal</div>
+        <div style="font-size: 12px; color: #93C5FD; font-weight: 600; margin-bottom: 16px;">លទ្ធផលប្រឡងបាក់ឌុប • MoEYS</div>
+        
+        <div id="boot-spinner" style="display: inline-flex; align-items: center; gap: 8px; font-size: 11px; color: #94A3B8; background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.08);">
+          <div style="width: 12px; height: 12px; border: 2px solid rgba(147, 197, 253, 0.3); border-top-color: #60A5FA; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+          <span>កំពុងដំណើរការកម្មវិធី...</span>
+        </div>
+
+        <div id="boot-fail" style="display: none; margin-top: 18px; max-width: 280px;">
+          <p style="font-size: 11px; color: #FCA5A5; margin-bottom: 10px;">ចំណាយពេលយូរក្នុងការទាញយក (Loading is taking longer than usual)</p>
+          <button onclick="try{localStorage.clear();}catch(e){}window.location.reload();" style="background: #2563EB; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 11px; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
+            ដំណើរការឡើងវិញ (Reload Application)
+          </button>
+        </div>
+      </div>
+      <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+      </style>
+      <script>
+        setTimeout(function() {
+          var fail = document.getElementById('boot-fail');
+          var spin = document.getElementById('boot-spinner');
+          if (fail && document.getElementById('boot-loader')) {
+            fail.style.display = 'block';
+            if (spin) spin.style.opacity = '0.5';
+          }
+        }, 3000);
+      </script>
+    </div>
+  </body>
+</html>
+
