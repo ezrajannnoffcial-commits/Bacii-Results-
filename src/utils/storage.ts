@@ -146,11 +146,28 @@ export function saveRegisteredStudent(student: StudentProfile, password?: string
 // Check password
 export function verifyCredentials(identifier: string, pass: string): StudentProfile | null {
   const cleanId = identifier.trim();
+  if (!cleanId) return null;
+
+  const cleanLower = cleanId.toLowerCase();
+  const digitsOnly = cleanId.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
+
   const students = getRegisteredStudents();
-  const matched = students.find(s => 
-    s.candidateNumber === cleanId || 
-    s.phoneNumber.replace(/\s+/g, '') === cleanId.replace(/\s+/g, '')
-  );
+  const matched = students.find(s => {
+    const candExact = s.candidateNumber.trim();
+    const candLower = candExact.toLowerCase();
+    const candDigits = candExact.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
+
+    const phoneRaw = s.phoneNumber.replace(/\s+/g, '');
+    const phoneDigits = phoneRaw.replace(/[^0-9]/g, '');
+
+    return (
+      candExact === cleanId ||
+      candLower === cleanLower ||
+      (digitsOnly.length >= 4 && candDigits === digitsOnly) ||
+      phoneRaw === cleanId.replace(/\s+/g, '') ||
+      (digitsOnly.length >= 7 && phoneDigits === digitsOnly)
+    );
+  });
 
   if (!matched) return null;
 

@@ -4,8 +4,9 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
-  // Standard root base for Cloud Run and web preview environments
-  const base = process.env.VITE_BASE || '/';
+  // Use relative './' base so assets resolve seamlessly on both Cloud Run root
+  // and GitHub Pages subpath deployments (e.g. /Bacii-Results-/) without 404 errors.
+  const base = process.env.VITE_BASE || './';
 
   return {
     base,
@@ -22,6 +23,7 @@ export default defineConfig(() => {
             'vendor-react': ['react', 'react-dom'],
             'vendor-motion': ['motion/react'],
             'vendor-icons': ['lucide-react'],
+            'vendor-firebase': ['firebase/app', 'firebase/firestore'],
           },
         },
       },

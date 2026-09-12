@@ -25,7 +25,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
       hasResult: result2026?.isReleased ?? false,
       grade: result2026?.grade || 'B',
       status: result2026?.overallStatus || 'PASS',
-      totalScore: result2026?.totalScore || 427.50
+      totalScore: result2026?.totalScore ?? 404.50
     },
     {
       year: 2025,

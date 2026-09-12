@@ -4,17 +4,31 @@
     <meta charset="utf-8">
     <title>Bac II Student Portal</title>
     <script type="text/javascript">
-      // GitHub Pages SPA redirect
-      var path = window.location.pathname;
-      var repo = '/Bacii-Results-/';
-      if (path.indexOf(repo) === 0) {
-        window.location.replace(repo + window.location.search + window.location.hash);
-      } else {
-        window.location.replace('/' + window.location.search + window.location.hash);
-      }
+      // GitHub Pages SPA smart redirect
+      (function() {
+        var currentPath = window.location.pathname;
+        var hostname = window.location.hostname;
+        var isGitHubPages = hostname.indexOf('github.io') !== -1;
+        var segments = currentPath.split('/').filter(Boolean);
+        
+        var baseRepo = '/';
+        if (isGitHubPages && segments.length > 0) {
+          baseRepo = '/' + segments[0] + '/';
+        }
+
+        // Avoid infinite loop if already at base repo
+        if (currentPath === baseRepo || currentPath === baseRepo.slice(0, -1)) {
+          return;
+        }
+
+        window.location.replace(baseRepo + window.location.search + window.location.hash);
+      })();
     </script>
   </head>
   <body>
-    <p>Redirecting to Bac II Student Portal...</p>
+    <div style="font-family: sans-serif; text-align: center; padding: 40px; color: #334155;">
+      <h2>Bac II Student Portal</h2>
+      <p>Redirecting to portal...</p>
+    </div>
   </body>
 </html>

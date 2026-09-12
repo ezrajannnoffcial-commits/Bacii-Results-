@@ -45,6 +45,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [emailInput, setEmailInput] = useState(student.email || '');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
 
   const handleSaveContact = (e: React.FormEvent) => {
     e.preventDefault();
@@ -265,14 +266,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         {onResetApp && (
           <button
             id="btn-reset-app"
-            onClick={() => {
-              const confirmMsg = lang === 'km' 
-                ? 'តើអ្នកប្រាកដជាចង់កំណត់កម្មវិធីឡើងវិញទៅសភាពដើមទាំងស្រុងទេ?' 
-                : 'Are you sure you want to reset app data to fresh out-of-the-box state?';
-              if (window.confirm(confirmMsg)) {
-                onResetApp();
-              }
-            }}
+            type="button"
+            onClick={() => setShowResetDialog(true)}
             className="w-full p-3 flex items-center justify-between text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center gap-2.5">
@@ -295,6 +290,45 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <span className="text-red-300">›</span>
         </button>
       </div>
+
+      {/* In-app Reset Confirmation Dialog (Avoids iFrame window.confirm blockage) */}
+      {showResetDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl p-5 max-w-xs w-full shadow-xl border border-slate-100 text-center animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto mb-3 text-amber-600">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-900 mb-1">
+              {lang === 'km' ? 'កំណត់ទិន្នន័យឡើងវិញ?' : 'Reset App Data?'}
+            </h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+              {lang === 'km'
+                ? 'តើអ្នកប្រាកដជាចង់កំណត់កម្មវិធីឡើងវិញទៅសភាពដើមទាំងស្រុងទេ? ទិន្នន័យទាំងអស់នឹងត្រូវស្ដារឡើងវិញ។'
+                : 'Are you sure you want to reset app data to fresh state? Default profiles and results will be restored.'}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowResetDialog(false)}
+                className="flex-1 py-2.5 px-3 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50"
+              >
+                {lang === 'km' ? 'បោះបង់ (Cancel)' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                id="btn-confirm-reset"
+                onClick={() => {
+                  setShowResetDialog(false);
+                  onResetApp?.();
+                }}
+                className="flex-1 py-2.5 px-3 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 shadow-sm"
+              >
+                {lang === 'km' ? 'កំណត់ឡើងវិញ' : 'Reset'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
