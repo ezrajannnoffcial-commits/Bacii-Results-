@@ -272,6 +272,15 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
               <ArrowLeft className="w-4 h-4" />
               <span>{t.btnBack}</span>
             </button>
+          ) : onBackToWelcome ? (
+            <button
+              type="button"
+              onClick={onBackToWelcome}
+              className="p-1 text-slate-500 hover:text-slate-800 flex items-center gap-1 text-xs font-semibold"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>{lang === 'km' ? 'ទំព័រដើម' : 'Home'}</span>
+            </button>
           ) : onGoToSignIn ? (
             <button
               type="button"

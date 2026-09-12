@@ -81,7 +81,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
         {/* Top Back Nav */}
         <div className="flex items-center justify-between mb-6">
           <button
-            onClick={onGoToRegister || onBackToWelcome}
+            onClick={onBackToWelcome || onGoToRegister}
             className="p-1 text-slate-500 hover:text-slate-800 flex items-center gap-1 text-xs font-semibold"
           >
             <ArrowLeft className="w-4 h-4" />
