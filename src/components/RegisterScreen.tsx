@@ -14,7 +14,8 @@ import {
   Phone, 
   Mail,
   Eye,
-  EyeOff
+  EyeOff,
+  LogIn
 } from 'lucide-react';
 import { StudentProfile, Language } from '../types';
 import { getT } from '../locales';
@@ -26,12 +27,14 @@ import {
 
 interface RegisterScreenProps {
   onRegisterComplete: (profile: StudentProfile, password?: string) => void;
-  onBackToWelcome: () => void;
+  onGoToSignIn?: () => void;
+  onBackToWelcome?: () => void;
   lang: Language;
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   onRegisterComplete,
+  onGoToSignIn,
   onBackToWelcome,
   lang
 }) => {
@@ -260,16 +263,27 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       {/* Top Bar with Step Indicators */}
       <div className="p-4 bg-white border-b border-slate-200 shrink-0">
         <div className="flex items-center justify-between mb-3">
-          <button
-            onClick={() => {
-              if (step === 1) onBackToWelcome();
-              else setStep((prev) => (prev - 1) as 1 | 2 | 3);
-            }}
-            className="p-1 text-slate-500 hover:text-slate-800 flex items-center gap-1 text-xs font-semibold"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>{t.btnBack}</span>
-          </button>
+          {step > 1 ? (
+            <button
+              type="button"
+              onClick={() => setStep((prev) => (prev - 1) as 1 | 2 | 3)}
+              className="p-1 text-slate-500 hover:text-slate-800 flex items-center gap-1 text-xs font-semibold"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>{t.btnBack}</span>
+            </button>
+          ) : onGoToSignIn ? (
+            <button
+              type="button"
+              onClick={onGoToSignIn}
+              className="p-1 text-blue-600 hover:text-blue-800 flex items-center gap-1 text-xs font-bold"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>{lang === 'km' ? 'ចូលគណនី' : 'Sign In'}</span>
+            </button>
+          ) : (
+            <div className="w-12" />
+          )}
           <span className="text-xs font-bold text-slate-700">
             {lang === 'km' ? 'ចុះឈ្មោះបេក្ខជន' : 'Candidate Registration'}
           </span>
@@ -434,6 +448,22 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
               <span>{t.btnNext}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
+
+            {onGoToSignIn && (
+              <div className="pt-3 text-center border-t border-slate-200/80">
+                <p className="text-xs text-slate-500 mb-1.5">
+                  {lang === 'km' ? 'បានចុះឈ្មោះរួចហើយ?' : 'Already registered your candidate ID?'}
+                </p>
+                <button
+                  type="button"
+                  onClick={onGoToSignIn}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-bold text-xs border border-blue-200 transition-colors"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>{lang === 'km' ? 'ចូលប្រើប្រាស់គណនី (Sign In)' : 'Sign In to View Result'}</span>
+                </button>
+              </div>
+            )}
           </form>
         )}
 

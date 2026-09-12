@@ -25,7 +25,6 @@ import {
   resetAppToFresh
 } from './utils/storage';
 import { MobileFrame } from './components/MobileFrame';
-import { WelcomeScreen } from './components/WelcomeScreen';
 import { RegisterScreen } from './components/RegisterScreen';
 import { SignInScreen } from './components/SignInScreen';
 import { BottomNav } from './components/BottomNav';
@@ -74,9 +73,9 @@ export default function App() {
     return getStoredActiveSession() || DEFAULT_STUDENT;
   });
 
-  // Active Screen (defaults to 'home' if already logged in, otherwise 'welcome')
+  // Active Screen (defaults to 'home' if already logged in, otherwise 'register')
   const [currentScreen, setCurrentScreen] = useState<Screen>(() => {
-    return getStoredActiveSession() ? 'home' : 'welcome';
+    return getStoredActiveSession() ? 'home' : 'register';
   });
 
   // Result state
@@ -221,7 +220,7 @@ export default function App() {
   const handleLogout = () => {
     setStoredActiveSession(null);
     setIsLoggedIn(false);
-    setCurrentScreen('welcome');
+    setCurrentScreen('register');
   };
 
   // Reset App to fresh out-of-the-box state
@@ -232,7 +231,7 @@ export default function App() {
     setResult(DEFAULT_RESULT_2026);
     setNotifications(DEFAULT_NOTIFICATIONS);
     setIsLoggedIn(false);
-    setCurrentScreen('welcome');
+    setCurrentScreen('register');
   };
 
   // Mark notification read
@@ -274,10 +273,10 @@ export default function App() {
       isLoggedIn={isLoggedIn}
       onQuickSimulateRelease={handleToggleRelease}
       isResultReleased={result.isReleased}
-      onNavigateToRegister={() => {
+      onNavigateToRegister={!isLoggedIn && currentScreen === 'signin' ? () => {
         setIsLoggedIn(false);
         setCurrentScreen('register');
-      }}
+      } : undefined}
     >
       {/* Push Notification Simulation Banner */}
       <PushNotificationToast
@@ -303,25 +302,16 @@ export default function App() {
           >
             {!isLoggedIn ? (
               <>
-                {currentScreen === 'welcome' && (
-                  <WelcomeScreen
-                    onRegister={() => setCurrentScreen('register')}
-                    onSignIn={() => setCurrentScreen('signin')}
-                    lang={lang}
-                  />
-                )}
-                {currentScreen === 'register' && (
-                  <RegisterScreen
-                    onRegisterComplete={handleRegisterComplete}
-                    onBackToWelcome={() => setCurrentScreen('welcome')}
-                    lang={lang}
-                  />
-                )}
-                {currentScreen === 'signin' && (
+                {currentScreen === 'signin' ? (
                   <SignInScreen
                     onSignInSuccess={handleSignInSuccess}
-                    onBackToWelcome={() => setCurrentScreen('welcome')}
                     onGoToRegister={() => setCurrentScreen('register')}
+                    lang={lang}
+                  />
+                ) : (
+                  <RegisterScreen
+                    onRegisterComplete={handleRegisterComplete}
+                    onGoToSignIn={() => setCurrentScreen('signin')}
                     lang={lang}
                   />
                 )}
